@@ -33,8 +33,8 @@ func TestGenerateCerts(t *testing.T) {
 	caTemplate := x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
-			Organization: []string{"My Company"},
-			CommonName:   "My CA",
+			Organization: []string{"DiskDec"},
+			CommonName:   "DiskDec",
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(365 * 24 * time.Hour), // 有效期1年
@@ -60,7 +60,7 @@ func TestGenerateCerts(t *testing.T) {
 	serverTemplate := x509.Certificate{
 		SerialNumber: big.NewInt(2),
 		Subject: pkix.Name{
-			Organization: []string{"My Company"},
+			Organization: []string{"DiskDec"},
 			CommonName:   "localhost",
 		},
 		IPAddresses: []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}, // 支持IPv4和IPv6本地地址
