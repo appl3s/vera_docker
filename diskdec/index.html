@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disk Encryption Management Tool</title>
+  <link rel="stylesheet" href="./tailwind.css">
+  <link rel="stylesheet" href="./font-awesome.css">
+  
+  <style>
+    body {
+      background-color: #eef2f7;
+      background-image: 
+        radial-gradient(#4a90e2 0.3px, transparent 0.3px),
+        radial-gradient(#4a90e2 0.3px, #eef2f7 0.3px);
+      background-size: 20px 20px;
+      background-position: 0 0, 10px 10px;
+      min-height: 100vh;
+    }
+    
+    .header-main {
+      background: linear-gradient(90deg, #2c6ecb 0%, #3b82f6 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .card-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+    }
+    
+    .card-container:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+    }
+    
+    .tab-active {
+      color: #2563eb;
+      border-bottom: 2px solid #2563eb;
+      font-weight: 500;
+    }
+    
+    .btn-primary {
+      background-color: #2563eb;
+      color: white;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-primary:hover {
+      background-color: #1d4ed8;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+    
+    .input-focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+  </style>
+</head>
+<body class="font-sans flex flex-col">
+  <!-- Blue header -->
+  <header class="header-main py-5 px-4">
+    <div class="container mx-auto">
+      <div class="flex items-center gap-3">
+        <div class="bg-white/20 p-2 rounded-lg">
+          <i class="fa fa-shield text-2xl"></i>
+        </div>
+        <h1 class="text-xl md:text-2xl font-bold">Disk Encryption Management Tool</h1>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content area -->
+  <main class="flex-grow container mx-auto px-4 py-8 max-w-2xl">
+    <!-- Function card -->
+    <div class="card-container overflow-hidden mb-6">
+      <!-- Tab navigation -->
+      <div class="flex border-b border-gray-100">
+        <button id="decrypt-tab" class="tab-active flex-1 py-4 px-6 text-center transition-all">
+          <i class="fa fa-unlock-alt mr-2"></i>Decrypt Disk
+        </button>
+        <button id="change-pwd-tab" class="text-gray-500 flex-1 py-4 px-6 text-center hover:text-gray-700 transition-all">
+          <i class="fa fa-key mr-2"></i>Change Password
+        </button>
+      </div>
+
+      <!-- Decryption form -->
+      <div id="decrypt-form" class="p-6 md:p-8">
+        <h2 class="text-xl font-semibold mb-6 text-gray-700 flex items-center">
+          <i class="fa fa-unlock text-blue-600 mr-2"></i>Enter Password to Decrypt Disk
+        </h2>
+        <form id="decryption-form" class="space-y-6">
+          <div class="space-y-2">
+            <label for="decrypt-password" class="block text-sm font-medium text-gray-700">Disk Password</label>
+            <div class="relative">
+              <input type="password" id="decrypt-password" 
+                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:input-focus bg-gray-50 pr-10"
+                     placeholder="Enter disk password" required>
+              <button type="button" class="toggle-password absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-blue-600 transition-colors" data-target="decrypt-password">
+                <i class="fa fa-eye-slash"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="pt-2">
+            <button type="submit" class="btn-primary w-full py-3.5 px-6 rounded-lg font-medium flex items-center justify-center">
+              <i class="fa fa-unlock-alt mr-2"></i>Decrypt Disk
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Password change form -->
+      <div id="change-pwd-form" class="p-6 md:p-8 hidden">
+        <h2 class="text-xl font-semibold mb-6 text-gray-700 flex items-center">
+          <i class="fa fa-refresh text-blue-600 mr-2"></i>Change Disk Password
+        </h2>
+        <form id="password-change-form" class="space-y-6">
+          <div class="space-y-2">
+            <label for="current-password" class="block text-sm font-medium text-gray-700">Current Password</label>
+            <div class="relative">
+              <input type="password" id="current-password" 
+                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:input-focus bg-gray-50 pr-10"
+                     placeholder="Enter current password" required>
+              <button type="button" class="toggle-password absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-blue-600 transition-colors" data-target="current-password">
+                <i class="fa fa-eye-slash"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="space-y-2">
+            <label for="new-password" class="block text-sm font-medium text-gray-700">New Password</label>
+            <div class="relative">
+              <input type="password" id="new-password" 
+                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:input-focus bg-gray-50 pr-10"
+                     placeholder="Enter new password (at least 8 characters)" required>
+              <button type="button" class="toggle-password absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-blue-600 transition-colors" data-target="new-password">
+                <i class="fa fa-eye-slash"></i>
+              </button>
+            </div>
+            <p class="mt-1 text-xs text-gray-500">
+              <i class="fa fa-info-circle mr-1"></i>
+              Password must contain uppercase, lowercase letters, numbers and special characters
+            </p>
+          </div>
+          
+          <div class="space-y-2">
+            <label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+            <div class="relative">
+              <input type="password" id="confirm-password" 
+                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:input-focus bg-gray-50 pr-10"
+                     placeholder="Re-enter new password" required>
+              <button type="button" class="toggle-password absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-blue-600 transition-colors" data-target="confirm-password">
+                <i class="fa fa-eye-slash"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="pt-2">
+            <button type="submit" class="btn-primary w-full py-3.5 px-6 rounded-lg font-medium flex items-center justify-center">
+              <i class="fa fa-save mr-2"></i>Save New Password
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Status alert box -->
+    <div id="status-alert" class="mt-6 p-4 rounded-xl hidden transition-all duration-400 transform opacity-0 translate-y-4 shadow-md">
+      <div class="flex items-start">
+        <i id="status-icon" class="fa mr-3 mt-0.5 text-xl"></i>
+        <div class="flex-1">
+          <h3 id="status-title" class="font-semibold text-base"></h3>
+          <p id="status-message" class="mt-1 text-sm"></p>
+        </div>
+        <button id="close-alert" class="ml-4 text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-gray-300 py-6 mt-12">
+    <div class="container mx-auto px-4 text-center text-sm">
+      <p>Disk Encryption Management Tool © 2025</p>
+    </div>
+  </footer>
+
+  <script src="./script.js"></script>
+<script src="./script.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const isFirstUse = true; //window.isFirstUse;
+    
+   
+    const decryptTab = document.getElementById('decrypt-tab');
+    const changePwdTab = document.getElementById('change-pwd-tab');
+    const decryptForm = document.getElementById('decrypt-form');
+    const changePwdForm = document.getElementById('change-pwd-form');
+    
+    function switchToChangePassword() {
+      decryptTab.classList.remove('tab-active');
+      decryptTab.classList.add('text-gray-500');
+      changePwdTab.classList.add('tab-active');
+      changePwdTab.classList.remove('text-gray-500');
+      decryptForm.classList.add('hidden');
+      changePwdForm.classList.remove('hidden');
+    }
+    
+    if (isFirstUse) {
+      switchToChangePassword();
+      showForceChangeAlert();
+    }
+    
+    decryptTab.addEventListener('click', () => {
+      if (isFirstUse) {
+        showForceChangeAlert();
+        return;
+      }
+      
+      decryptTab.classList.add('tab-active');
+      decryptTab.classList.remove('text-gray-500');
+      changePwdTab.classList.remove('tab-active');
+      changePwdTab.classList.add('text-gray-500');
+      decryptForm.classList.remove('hidden');
+      changePwdForm.classList.add('hidden');
+    });
+    
+    changePwdTab.addEventListener('click', switchToChangePassword);
+    
+    document.querySelectorAll('.toggle-password').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const input = document.getElementById(this.dataset.target);
+        const icon = this.querySelector('i');
+        input.type = input.type === 'password' ? 'text' : 'password';
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+      });
+    });
+    
+    document.getElementById('decryption-form').addEventListener('submit', e => {
+      e.preventDefault();
+      if (isFirstUse) {
+        showForceChangeAlert();
+        return;
+      }
+
+      showStatusAlert('info', 'Decrypting', 'Decrypting disk...');
+      setTimeout(() => {
+        showStatusAlert('success', 'Decryption Successful', 'Disk has been successfully decrypted');
+        e.target.reset();
+      }, 1500);
+    });
+    
+    document.getElementById('password-change-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const newPwd = document.getElementById('new-password').value;
+      const confirmPwd = document.getElementById('confirm-password').value;
+      
+      if (newPwd.length < 8) {
+        showStatusAlert('error', 'Verification Failed', 'New password must be at least 8 characters');
+        return;
+      }
+      
+      if (newPwd !== confirmPwd) {
+        showStatusAlert('error', 'Verification Failed', 'The new passwords do not match');
+        return;
+      }
+      
+      showStatusAlert('info', 'Updating', 'Changing disk password...');
+      setTimeout(() => {
+        showStatusAlert('success', 'Update Successful', 'Password has been changed. You can now decrypt the disk.');
+        e.target.reset();
+      }, 2000);
+    });
+    
+    function showForceChangeAlert() {
+      const alert = document.getElementById('status-alert');
+      const icon = document.getElementById('status-icon');
+      const titleEl = document.getElementById('status-title');
+      const msgEl = document.getElementById('status-message');
+      
+      alert.className = 'mt-6 p-4 rounded-xl transition-all duration-400 shadow-md border-2 border-orange-200';
+      icon.className = 'fa fa-exclamation-triangle mr-3 mt-0.5 text-xl text-orange-500';
+      titleEl.className = 'font-semibold text-base text-orange-800';
+      msgEl.className = 'mt-1 text-sm text-orange-700';
+      
+      titleEl.textContent = 'Mandatory Password Change';
+      msgEl.textContent = 'For security, please change your password before using other functions.';
+      
+      alert.classList.remove('opacity-0', 'translate-y-4');
+      alert.classList.add('opacity-100', 'translate-y-0');
+      
+      clearTimeout(window.alertTimeout);
+    }
+    
+    function showStatusAlert(type, title, msg) {
+      const alert = document.getElementById('status-alert');
+      const icon = document.getElementById('status-icon');
+      const titleEl = document.getElementById('status-title');
+      const msgEl = document.getElementById('status-message');
+      
+      alert.className = 'mt-6 p-4 rounded-xl transition-all duration-400 shadow-md';
+      icon.className = 'fa mr-3 mt-0.5 text-xl';
+      
+      if (type === 'success') {
+        alert.classList.add('bg-green-50', 'border', 'border-green-200');
+        icon.classList.add('fa-check-circle', 'text-green-500');
+        titleEl.classList.add('text-green-800');
+        msgEl.classList.add('text-green-700');
+      } else if (type === 'error') {
+        alert.classList.add('bg-red-50', 'border', 'border-red-200');
+        icon.classList.add('fa-exclamation-circle', 'text-red-500');
+        titleEl.classList.add('text-red-800');
+        msgEl.classList.add('text-red-700');
+      } else {
+        alert.classList.add('bg-blue-50', 'border', 'border-blue-200');
+        icon.classList.add('fa-info-circle', 'text-blue-500');
+        titleEl.classList.add('text-blue-800');
+        msgEl.classList.add('text-blue-700');
+      }
+      
+      titleEl.textContent = title;
+      msgEl.textContent = msg;
+      alert.classList.remove('opacity-0', 'translate-y-4');
+      alert.classList.add('opacity-100', 'translate-y-0');
+      
+      window.alertTimeout = setTimeout(hideStatusAlert, 5000);
+    }
+    
+    function hideStatusAlert() {
+      const alert = document.getElementById('status-alert');
+      alert.classList.remove('opacity-100', 'translate-y-0');
+      alert.classList.add('opacity-0', 'translate-y-4');
+    }
+    
+    document.getElementById('close-alert').addEventListener('click', () => {
+      if (!isFirstUse) {
+        hideStatusAlert();
+      }
+    });
+  });
+</script>
+</body>
+</html>
