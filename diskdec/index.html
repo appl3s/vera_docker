@@ -232,14 +232,14 @@
                     };
                 }
             }
-            async function changePass(pwd) {
+            async function changePass(old,newPwd) {
                 try {
                     const response = await fetch('/api/changePass', {  
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ pwd: pwd })
+                        body: JSON.stringify({ old: old, new: newPwd })
                     });
 
                     if (!response.ok) {
@@ -301,6 +301,7 @@
                     switchToChangePassword();
                     showForceChangeAlert();
                     document.getElementById("current-password").value = decPwd;
+                    document.getElementById('decrypt-password').value = "";
                     return;
                 }
                 if (resp.ok) {
@@ -313,6 +314,7 @@
 
             document.getElementById('password-change-form').addEventListener('submit', async e => {
                 e.preventDefault();
+                const old = document.getElementById('current-password').value;
                 const newPwd = document.getElementById('new-password').value;
                 const confirmPwd = document.getElementById('confirm-password').value;
 
@@ -327,7 +329,7 @@
                 }
 
                 showStatusAlert('info', 'Updating', 'Changing disk password...');
-                const resp = await changePass(newPwd);
+                const resp = await changePass(old, newPwd);
                 if (resp.ok) {
                     showStatusAlert('success', 'Update Successful', 'Password has been changed. You can now decrypt the disk.');
                     e.target.reset();

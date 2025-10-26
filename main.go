@@ -55,12 +55,12 @@ func decrypt(pwd string) (bool, error) {
 	return err == nil, err
 }
 
-// /opt/veracrypt --change --pim=11 --stdin --non-interactive /opt/secret.vec
+// /opt/veracrypt --change --pim=11 --stdin --non-interactive --new-password xxx --new-pim=11 /opt/secret.vec
 func change(old, new string) (bool, error) {
 	old = SHA256Hash(old)
 	new = SHA256Hash(new)
 	_ = exec.Command("/opt/veracrypt", "-u").Run()
-	cmd := exec.Command("/opt/veracrypt", "--change", "--pim=11", "--stdin", "--non-interactive", fmt.Sprintf("--new-password=%s", new), "/opt/secret.vec")
+	cmd := exec.Command("/opt/veracrypt", "--change", "--pim=11", "--stdin", "--non-interactive", fmt.Sprintf("--new-password=%s", new), "--new-pim=11", "/opt/secret.vec")
 	cmd.Stdin = strings.NewReader(old + "\n")
 	err := cmd.Run()
 	return err == nil, err
