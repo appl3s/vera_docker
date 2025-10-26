@@ -207,9 +207,55 @@
     </footer>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const isFirstUse = true; //window.isFirstUse;
+        document.addEventListener('DOMContentLoaded',async function () {
+            async function decrypt(pwd) {
+                try {
+                    const response = await fetch('/api/decrypt', {  
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ pwd: pwd })
+                    });
 
+                    if (!response.ok) {
+                        throw new Error(`code: ${response.status}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    console.error(error.message);
+                    return {
+                        isFirst: false,
+                        ok: false,
+                        error: error.message,
+                    };
+                }
+            }
+            async function changePass(pwd) {
+                try {
+                    const response = await fetch('/api/changePass', {  
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ pwd: pwd })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`code: ${response.status}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    console.error(error.message);
+                    return {
+                        isFirst: false,
+                        ok: false,
+                        error: error.message,
+                    };
+                }
+            }
 
             const decryptTab = document.getElementById('decrypt-tab');
             const changePwdTab = document.getElementById('change-pwd-tab');
@@ -225,17 +271,7 @@
                 changePwdForm.classList.remove('hidden');
             }
 
-            if (isFirstUse) {
-                switchToChangePassword();
-                showForceChangeAlert();
-            }
-
             decryptTab.addEventListener('click', () => {
-                if (isFirstUse) {
-                    showForceChangeAlert();
-                    return;
-                }
-
                 decryptTab.classList.add('tab-active');
                 decryptTab.classList.remove('text-gray-500');
                 changePwdTab.classList.remove('tab-active');
@@ -256,27 +292,32 @@
                 });
             });
 
-            document.getElementById('decryption-form').addEventListener('submit', e => {
+            document.getElementById('decryption-form').addEventListener('submit', async e => {
                 e.preventDefault();
-                if (isFirstUse) {
+                const decPwd = document.getElementById('decrypt-password').value;
+                showStatusAlert('info', 'Decrypting', 'Decrypting disk...');
+                const resp = await decrypt(decPwd)
+                if (resp.isFirst) {
+                    switchToChangePassword();
                     showForceChangeAlert();
+                    document.getElementById("current-password").value = decPwd;
                     return;
                 }
-
-                showStatusAlert('info', 'Decrypting', 'Decrypting disk...');
-                setTimeout(() => {
+                if (resp.ok) {
                     showStatusAlert('success', 'Decryption Successful', 'Disk has been successfully decrypted');
                     e.target.reset();
-                }, 1500);
+                }else {
+                    showStatusAlert('error', 'Decryption Failed', resp.error);
+                }
             });
 
-            document.getElementById('password-change-form').addEventListener('submit', e => {
+            document.getElementById('password-change-form').addEventListener('submit', async e => {
                 e.preventDefault();
                 const newPwd = document.getElementById('new-password').value;
                 const confirmPwd = document.getElementById('confirm-password').value;
 
-                if (newPwd.length < 8) {
-                    showStatusAlert('error', 'Verification Failed', 'New password must be at least 8 characters');
+                if (newPwd.length < 12) {
+                    showStatusAlert('error', 'Verification Failed', 'New password must be at least 12 characters');
                     return;
                 }
 
@@ -286,10 +327,13 @@
                 }
 
                 showStatusAlert('info', 'Updating', 'Changing disk password...');
-                setTimeout(() => {
+                const resp = await changePass(newPwd);
+                if (resp.ok) {
                     showStatusAlert('success', 'Update Successful', 'Password has been changed. You can now decrypt the disk.');
                     e.target.reset();
-                }, 2000);
+                }else{
+                    showStatusAlert('error', 'Update Failed', resp.error);
+                }
             });
 
             function showForceChangeAlert() {
@@ -353,9 +397,7 @@
             }
 
             document.getElementById('close-alert').addEventListener('click', () => {
-                if (!isFirstUse) {
-                    hideStatusAlert();
-                }
+                hideStatusAlert();
             });
         });
     </script>

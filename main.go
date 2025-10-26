@@ -3,12 +3,15 @@ package main
 import (
 	"embed"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 )
+
+var DefaultPwd = `Qwe123!@#!@#`
 
 //go:embed certs/*
 var certsFS embed.FS
@@ -20,11 +23,11 @@ func main() {
 	// 1. 读取嵌入的证书和私钥
 	certData, err := fs.ReadFile(certsFS, "certs/cert.pem")
 	if err != nil {
-		panic("读取证书失败: " + err.Error())
+		panic("error1: " + err.Error())
 	}
 	keyData, err := fs.ReadFile(certsFS, "certs/key.pem")
 	if err != nil {
-		panic("读取私钥失败: " + err.Error())
+		panic("error2: " + err.Error())
 	}
 
 	// 2. 创建临时文件存储证书（因为 RunTLS 需要文件路径）
@@ -53,11 +56,42 @@ func main() {
 
 	api := r.Group("/api")
 	{
-		api.GET("/hello", func(c *gin.Context) { // /api/hello 路由
-			c.JSON(200, gin.H{"message": "API hello"})
+		api.POST("/decrypt", func(c *gin.Context) {
+			var obj struct {
+				Pwd string `json:"pwd"`
+			}
+			if err := c.ShouldBindJSON(&obj); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			if obj.Pwd == DefaultPwd {
+				c.JSON(200, gin.H{"isFirst": true, "ok": false, "error": "must change password"})
+				return
+			}
+			if len(obj.Pwd) < 12 {
+				c.JSON(200, gin.H{"isFirst": false, "ok": false, "error": "password must be at least 12 characters"})
+				return
+			}
+			c.JSON(200, gin.H{"isFirst": false, "ok": true, "error": ""})
+
 		})
-		api.POST("/decrypt", func(c *gin.Context) { // /api/decrypt 路由
-			c.JSON(200, gin.H{"status": "decrypting"})
+		api.POST("/changePass", func(c *gin.Context) {
+			var obj struct {
+				Pwd string `json:"pwd"`
+			}
+			if err := c.ShouldBindJSON(&obj); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			if obj.Pwd == DefaultPwd {
+				c.JSON(200, gin.H{"ok": false, "error": "cannot use this password"})
+				return
+			}
+			if len(obj.Pwd) < 12 {
+				c.JSON(200, gin.H{"isFirst": false, "ok": false, "error": "password must be at least 12 characters"})
+				return
+			}
+			c.JSON(200, gin.H{"ok": true, "error": ""})
 		})
 	}
 
