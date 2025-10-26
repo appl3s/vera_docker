@@ -52,6 +52,9 @@ func decrypt(pwd string) (bool, error) {
 	cmd := exec.Command("/opt/veracrypt", "--pim=11", "--stdin", "--non-interactive", "/opt/secret.vec", "/mnt/secret")
 	cmd.Stdin = strings.NewReader(pwd + "\n")
 	err := cmd.Run()
+	if err == nil {
+		exec.Command("/bin/ln", "-s", "/mnt/secret/", "/root/secret")
+	}
 	return err == nil, err
 }
 
