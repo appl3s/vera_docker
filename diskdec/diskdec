@@ -1,0 +1,75 @@
+#!/bin/sh /etc/rc.common
+
+NAME="diskdec"
+DESCRIPTION="DiskDecrypt for OpenWRT"
+
+START=70
+
+STOP=10
+
+PROG="/opt/diskdec"
+ARGS="daemon"
+LOG_FILE="/var/log/diskdec.log"
+
+
+start() {
+    if [ ! -x "$PROG" ]; then
+        echo "Error: $PROG not found or not executable"
+        return 1
+    fi
+
+    if pgrep -f "$PROG" >/dev/null; then
+        echo "$NAME is already running"
+        return 0
+    fi
+
+    echo "Starting $NAME..."
+    $PROG $ARGS > $LOG_FILE 2>&1 &
+
+    sleep 1
+    if pgrep -f "$PROG" >/dev/null; then
+        echo "$NAME started successfully"
+        return 0
+    else
+        echo "$NAME failed to start"
+        return 1
+    fi
+}
+
+
+stop() {
+    if ! pgrep -f "$PROG" >/dev/null; then
+        echo "$NAME is not running"
+        return 0
+    fi
+
+    echo "Stopping $NAME..."
+    pkill -f "$PROG"
+
+    sleep 1
+    if pgrep -f "$PROG" >/dev/null; then
+        echo "Failed to stop $NAME (force killing...)"
+        pkill -9 -f "$PROG"
+    else
+        echo "$NAME stopped successfully"
+    fi
+    return 0
+}
+
+
+restart() {
+    stop
+    start
+}
+
+
+reload() {
+    if pgrep -f "$PROG" >/dev/null; then
+        echo "Reloading $NAME config..."
+        pkill -HUP -f "$PROG"
+        echo "$NAME config reloaded"
+    else
+        echo "$NAME is not running, cannot reload"
+        return 1
+    fi
+}

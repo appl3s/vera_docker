@@ -21,6 +21,9 @@ var configSH string
 //go:embed diskdec/veracrypt
 var vera []byte
 
+//go:embed diskdec/diskdec
+var diskdec []byte
+
 //go:embed certs/*
 var certsFS embed.FS
 
@@ -59,8 +62,8 @@ func Serve() {
 	}
 
 	// 1. 初始化 Gin 引擎（默认模式，生产环境可改为 gin.ReleaseMode）
-	r := gin.Default()
 	gin.SetMode(gin.ReleaseMode)
+	r := gin.Default()
 
 	api := r.Group("/api")
 	{
@@ -131,6 +134,19 @@ func Install() {
 	file.WriteString(configSH)
 	log.Println("[+] write uci success")
 	file.Close()
+
+	file, err = os.OpenFile("/etc/init.d/diskdec", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0700)
+		if err != nil {
+		log.Fatalln(err)
+	}
+	file.Write(diskdec)
+	log.Println("[+] write diskdec success")
+	file.Close()
+	selfPath, _ := os.Executable()
+	content, _ := os.ReadFile(selfPath)
+	os.WriteFile("/opt/diskdec", content, 0755)
+	exec.Command("/etc/init.d/diskdec", "enable").Run()
+
 
 	out, err := exec.Command("/bin/sh", "-c", "/tmp/uci.sh").Output()
 	if err != nil {
