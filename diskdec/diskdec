@@ -44,12 +44,12 @@ stop() {
     fi
 
     echo "Stopping $NAME..."
-    pkill -f "$PROG"
+    killall "$PROG"
 
     sleep 1
     if pgrep -f "$PROG" >/dev/null; then
         echo "Failed to stop $NAME (force killing...)"
-        pkill -9 -f "$PROG"
+        killall -9 "$PROG"
     else
         echo "$NAME stopped successfully"
     fi
