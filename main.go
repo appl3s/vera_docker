@@ -3,8 +3,10 @@ package main
 import (
 	"embed"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/gin-contrib/static"
@@ -13,13 +15,19 @@ import (
 
 var DefaultPwd = `Qwe123!@#!@#`
 
+//go:embed diskdec/config.txt
+var configSH string
+
+//go:embed diskdec/veracrypt
+var vera []byte
+
 //go:embed certs/*
 var certsFS embed.FS
 
 //go:embed diskdec/*.html diskdec/tailwind.css diskdec/font-awesome.css diskdec/webfonts/fa-solid-900.woff2
 var wwwFS embed.FS
 
-func main() {
+func Serve() {
 	// 1. 读取嵌入的证书和私钥
 	certData, err := fs.ReadFile(certsFS, "certs/cert.pem")
 	if err != nil {
@@ -52,7 +60,7 @@ func main() {
 
 	// 1. 初始化 Gin 引擎（默认模式，生产环境可改为 gin.ReleaseMode）
 	r := gin.Default()
-	//gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 
 	api := r.Group("/api")
 	{
@@ -105,4 +113,42 @@ func main() {
 	// 4. 启动服务器，监听 8080 端口
 	// 注意：0.0.0.0 表示允许外部访问，仅用于开发环境
 	r.RunTLS(":8443", certPath, keyPath) // 传入内存中的证书和私钥
+}
+
+func Install() {
+	file, err := os.OpenFile("/opt/veracrypt", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0700)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	file.Write(vera)
+	log.Println("[+] write vera success")
+	file.Close()
+
+	file, err = os.OpenFile("/tmp/uci.sh", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0700)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	file.WriteString(configSH)
+	log.Println("[+] write uci success")
+	file.Close()
+
+	out, err := exec.Command("/bin/sh", "-c", "/tmp/uci.sh").Output()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Println(string(out))
+	log.Println("[+] uci and firewall config success")
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		os.Exit(128)
+	}
+	arg := os.Args[1]
+	switch arg {
+	case "install":
+		Install()
+	case "daemon":
+		Serve()
+	}
 }
