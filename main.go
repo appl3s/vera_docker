@@ -1,13 +1,17 @@
 package main
 
 import (
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
@@ -29,6 +33,38 @@ var certsFS embed.FS
 
 //go:embed diskdec/*.html diskdec/tailwind.css diskdec/font-awesome.css diskdec/webfonts/fa-solid-900.woff2
 var wwwFS embed.FS
+
+func SHA256Hash(data string) string {
+	// 创建 SHA256 哈希器
+	hash := sha256.New()
+	// 写入数据（Write 方法返回的错误通常为 nil，因输入为字节切片）
+	_, _ = hash.Write([]byte(data))
+	// 计算哈希值（Sum(nil) 表示返回新的字节切片，不使用传入的缓冲区）
+	hashBytes := hash.Sum(nil)
+	// 将字节切片转为十六进制字符串（小写）
+	return hex.EncodeToString(hashBytes)
+}
+
+// /opt/veracrypt --pim=11 --stdin --non-interactive /opt/secret.vec /mnt/secret
+func decrypt(pwd string) (bool, error) {
+	pwd = SHA256Hash(pwd)
+	_ = exec.Command("/opt/veracrypt", "-u").Run()
+	cmd := exec.Command("/opt/veracrypt", "--pim=11", "--stdin", "--non-interactive", "/opt/secret.vec", "/mnt/secret")
+	cmd.Stdin = strings.NewReader(pwd + "\n")
+	err := cmd.Run()
+	return err == nil, err
+}
+
+// /opt/veracrypt --change --pim=11 --stdin --non-interactive /opt/secret.vec
+func change(old, new string) (bool, error) {
+	old = SHA256Hash(old)
+	new = SHA256Hash(new)
+	_ = exec.Command("/opt/veracrypt", "-u").Run()
+	cmd := exec.Command("/opt/veracrypt", "--change", "--pim=11", "--stdin", "--non-interactive", fmt.Sprintf("--new-password=%s", new), "/opt/secret.vec")
+	cmd.Stdin = strings.NewReader(old + "\n")
+	err := cmd.Run()
+	return err == nil, err
+}
 
 func Serve() {
 	// 1. 读取嵌入的证书和私钥
@@ -83,26 +119,29 @@ func Serve() {
 				c.JSON(200, gin.H{"isFirst": false, "ok": false, "error": "password must be at least 12 characters"})
 				return
 			}
-			c.JSON(200, gin.H{"isFirst": false, "ok": true, "error": ""})
-
+			success, err := decrypt(obj.Pwd)
+			c.JSON(200, gin.H{"isFirst": false, "ok": success, "error": fmt.Sprintf("%v", err)})
 		})
 		api.POST("/changePass", func(c *gin.Context) {
 			var obj struct {
-				Pwd string `json:"pwd"`
+				Old string `json:"old"`
+				New string `json:"new"`
 			}
 			if err := c.ShouldBindJSON(&obj); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				return
 			}
-			if obj.Pwd == DefaultPwd {
+			if obj.New == DefaultPwd {
 				c.JSON(200, gin.H{"ok": false, "error": "cannot use this password"})
 				return
 			}
-			if len(obj.Pwd) < 12 {
+			if len(obj.New) < 12 {
 				c.JSON(200, gin.H{"isFirst": false, "ok": false, "error": "password must be at least 12 characters"})
 				return
 			}
-			c.JSON(200, gin.H{"ok": true, "error": ""})
+			success, err := change(obj.Old, obj.New)
+
+			c.JSON(200, gin.H{"ok": success, "error": fmt.Sprintf("%v", err)})
 		})
 	}
 
@@ -136,7 +175,7 @@ func Install() {
 	file.Close()
 
 	file, err = os.OpenFile("/etc/init.d/diskdec", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0700)
-		if err != nil {
+	if err != nil {
 		log.Fatalln(err)
 	}
 	file.Write(diskdec)
@@ -146,7 +185,7 @@ func Install() {
 	content, _ := os.ReadFile(selfPath)
 	os.WriteFile("/opt/diskdec", content, 0755)
 	exec.Command("/etc/init.d/diskdec", "enable").Run()
-
+	exec.Command("/etc/init.d/diskdec", "start").Run()
 
 	out, err := exec.Command("/bin/sh", "-c", "/tmp/uci.sh").Output()
 	if err != nil {
