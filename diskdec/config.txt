@@ -48,9 +48,16 @@ uci set firewall.@zone[-1].forward='DROP'
 uci set firewall.@zone[-1].masq='1'
 uci set firewall.@zone[-1].output='ACCEPT'
 
+uci set firewall.@zone[1].network='wan' 'wan6' 'usb'
+
 uci set firewall.@forwarding[0]=forwarding
 uci set firewall.@forwarding[0].src='lan'
 uci set firewall.@forwarding[0].dest='nofw'
+
+uci add firewall forwarding
+uci set firewall.@forwarding[-1]=forwarding
+uci set firewall.@forwarding[-1].src='docker'
+uci set firewall.@forwarding[-1].dest='wan'
 
 uci commit firewall
 /etc/init.d/firewall restart

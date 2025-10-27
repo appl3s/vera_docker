@@ -48,6 +48,8 @@ func SHA256Hash(data string) string {
 // /opt/veracrypt --pim=11 --stdin --non-interactive /opt/secret.vec /mnt/secret
 func decrypt(pwd string) (bool, error) {
 	pwd = SHA256Hash(pwd)
+
+	os.MkdirAll("/mnt/secret", 0700)
 	_ = exec.Command("/opt/veracrypt", "-u").Run()
 	cmd := exec.Command("/opt/veracrypt", "--pim=11", "--stdin", "--non-interactive", "/opt/secret.vec", "/mnt/secret")
 	cmd.Stdin = strings.NewReader(pwd + "\n")
