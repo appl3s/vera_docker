@@ -8,25 +8,22 @@ STOP=7
 
 APP_PATH="/root/secret/proxymanager-arm"       
 APP_ARGS="-c /root/secret/network_config.json"                     
-LOG_FILE="/var/log/${NAME}.log"
 RESPAWN_DELAY=2
 RESPAWN_MAX=0
 
 
 start_service() {
-    mkdir -p $(dirname "$LOG_FILE")
-
     procd_open_instance
 
     procd_set_param command "$APP_PATH" $APP_ARGS
 
-    procd_set_param stdout "$LOG_FILE"
-    procd_set_param stderr "$LOG_FILE"
+    procd_set_param stdout 1
+    procd_set_param stderr 1
 
     procd_set_param respawn "$RESPAWN_DELAY" "$RESPAWN_MAX"
 
     procd_close_instance
-
+    echo "Stating ${NAME}..."
 }
 
 stop_service() {

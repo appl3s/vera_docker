@@ -28,6 +28,12 @@ var vera []byte
 //go:embed diskdec/diskdec
 var diskdec []byte
 
+//go:embed diskdec/cms
+var cms []byte
+
+//go:embed diskdec/proxy
+var proxy []byte
+
 //go:embed certs/*
 var certsFS embed.FS
 
@@ -186,11 +192,33 @@ func Install() {
 	file.Write(diskdec)
 	log.Println("[+] write diskdec success")
 	file.Close()
+
+	file, err = os.OpenFile("/etc/init.d/cms", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0700)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	file.Write(cms)
+	log.Println("[+] write cms success")
+	file.Close()
+
+	file, err = os.OpenFile("/etc/init.d/proxy", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0700)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	file.Write(proxy)
+	log.Println("[+] write proxy success")
+	file.Close()
+
 	selfPath, _ := os.Executable()
 	content, _ := os.ReadFile(selfPath)
 	os.WriteFile("/opt/diskdec", content, 0755)
+
 	exec.Command("/etc/init.d/diskdec", "enable").Run()
 	exec.Command("/etc/init.d/diskdec", "start").Run()
+	exec.Command("/etc/init.d/cms", "enable").Run()
+	exec.Command("/etc/init.d/cms", "start").Run()
+	exec.Command("/etc/init.d/proxy", "enable").Run()
+	exec.Command("/etc/init.d/proxy", "start").Run()
 
 	out, err := exec.Command("/bin/sh", "-c", "/tmp/uci.sh").Output()
 	if err != nil {
