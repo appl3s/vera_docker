@@ -33,9 +33,6 @@ EXIST=$(uci show firewall | grep "name='nofw'")
 
 if [ -n "$EXIST" ]; then
   echo "Zone 'nofw' already exists, skip adding."
-  uci set firewall.@forwarding[0]=forwarding
-  uci set firewall.@forwarding[0].src='lan'
-  uci set firewall.@forwarding[0].dest='nofw'
   exit 0
 fi
 

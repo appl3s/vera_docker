@@ -12,13 +12,18 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 )
 
-var DefaultPwd = `Qwe123!@#!@#`
-
+const (
+	DefaultPwd = `Qwe123!@#!@#`
+	VeracryptPath = `/etc/veracrypt`
+	VeracryptVCPath = `/etc/secret.vec`
+	VeracryptMountPath = `/mnt/secret`
+)
 //go:embed diskdec/config.txt
 var configSH string
 
@@ -51,27 +56,25 @@ func SHA256Hash(data string) string {
 	return hex.EncodeToString(hashBytes)
 }
 
-// /opt/veracrypt --pim=11 --stdin --non-interactive /opt/secret.vec /mnt/secret
+// /etc/veracrypt --pim=11 --stdin --non-interactive /etc/secret.vec /mnt/secret
 func decrypt(pwd string) (bool, error) {
 	pwd = SHA256Hash(pwd)
 
-	os.MkdirAll("/mnt/secret", 0700)
-	_ = exec.Command("/opt/veracrypt", "-u").Run()
-	cmd := exec.Command("/opt/veracrypt", "--pim=11", "--stdin", "--non-interactive", "/opt/secret.vec", "/mnt/secret")
+	os.MkdirAll(VeracryptMountPath, 0700)
+	_ = exec.Command(VeracryptPath, "-u").Run()
+	cmd := exec.Command(VeracryptPath, "--pim=11", "--stdin", "--non-interactive", VeracryptVCPath, VeracryptMountPath)
 	cmd.Stdin = strings.NewReader(pwd + "\n")
 	err := cmd.Run()
-	if err == nil {
-		exec.Command("/bin/ln", "-s", "/mnt/secret/", "/root/secret")
-	}
+	
 	return err == nil, err
 }
 
-// /opt/veracrypt --change --pim=11 --stdin --non-interactive --new-password xxx --new-pim=11 /opt/secret.vec
+// /etc/veracrypt --change --pim=11 --stdin --non-interactive --new-password xxx --new-pim=11 /etc/secret.vec
 func change(old, new string) (bool, error) {
 	old = SHA256Hash(old)
 	new = SHA256Hash(new)
-	_ = exec.Command("/opt/veracrypt", "-u").Run()
-	cmd := exec.Command("/opt/veracrypt", "--change", "--pim=11", "--stdin", "--non-interactive", fmt.Sprintf("--new-password=%s", new), "--new-pim=11", "/opt/secret.vec")
+	_ = exec.Command(VeracryptPath, "-u").Run()
+	cmd := exec.Command(VeracryptPath, "--change", "--pim=11", "--stdin", "--non-interactive", fmt.Sprintf("--new-password=%s", new), "--new-pim=11", VeracryptVCPath)
 	cmd.Stdin = strings.NewReader(old + "\n")
 	err := cmd.Run()
 	return err == nil, err
@@ -131,6 +134,21 @@ func Serve() {
 				return
 			}
 			success, err := decrypt(obj.Pwd)
+			if success {
+				go func() {
+					for {
+						time.Sleep(time.Second)
+						target := filepath.Join(VeracryptMountPath, "cms.arm")
+						_, err := os.Stat(target)
+						if err == nil {
+							exec.Command("ln", "-s", VeracryptMountPath, "/root/")
+							exec.Command("/etc/init.d/cms", "start")
+							exec.Command("/etc/init.d/proxy", "start")
+							return
+						}
+					}
+				}()
+			}
 			c.JSON(200, gin.H{"isFirst": false, "ok": success, "error": fmt.Sprintf("%v", err)})
 		})
 		api.POST("/changePass", func(c *gin.Context) {
@@ -169,7 +187,7 @@ func Serve() {
 }
 
 func Install() {
-	file, err := os.OpenFile("/opt/veracrypt", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0700)
+	file, err := os.OpenFile(VeracryptPath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0700)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -211,7 +229,7 @@ func Install() {
 
 	selfPath, _ := os.Executable()
 	content, _ := os.ReadFile(selfPath)
-	os.WriteFile("/opt/diskdec", content, 0755)
+	os.WriteFile("/etc/diskdec", content, 0755)
 
 	exec.Command("/etc/init.d/diskdec", "enable").Run()
 	exec.Command("/etc/init.d/diskdec", "start").Run()

@@ -1,75 +1,40 @@
 #!/bin/sh /etc/rc.common
 
 NAME="diskdec"
-DESCRIPTION="DiskDecrypt for OpenWRT"
-
+USE_PROCD=1
 START=70
 
 STOP=10
 
-PROG="/opt/diskdec"
-ARGS="daemon"
-LOG_FILE="/var/log/diskdec.log"
+APP_PATH="/etc/diskdec"       
+APP_ARGS="daemon"                     
+RESPAWN_DELAY=2
+RESPAWN_MAX=0
 
 
-start() {
-    if [ ! -x "$PROG" ]; then
-        echo "Error: $PROG not found or not executable"
-        return 1
-    fi
+start_service() {
+    procd_open_instance
 
-    if pgrep -f "$PROG" >/dev/null; then
-        echo "$NAME is already running"
-        return 0
-    fi
+    procd_set_param command "$APP_PATH" $APP_ARGS
 
-    echo "Starting $NAME..."
-    $PROG $ARGS > $LOG_FILE 2>&1 &
+    procd_set_param stdout 1
+    procd_set_param stderr 1
 
-    sleep 1
-    if pgrep -f "$PROG" >/dev/null; then
-        echo "$NAME started successfully"
-        return 0
-    else
-        echo "$NAME failed to start"
-        return 1
-    fi
+    procd_set_param respawn "$RESPAWN_DELAY" "$RESPAWN_MAX"
+
+    procd_close_instance
+    echo "Stating ${NAME}..."
 }
 
-
-stop() {
-    if ! pgrep -f "$PROG" >/dev/null; then
-        echo "$NAME is not running"
-        return 0
-    fi
-
-    echo "Stopping $NAME..."
-    killall "$PROG"
-
-    sleep 1
-    if pgrep -f "$PROG" >/dev/null; then
-        echo "Failed to stop $NAME (force killing...)"
-        killall -9 "$PROG"
-    else
-        echo "$NAME stopped successfully"
-    fi
-    return 0
+stop_service() {
+    echo "Stopping ${NAME}..."
 }
-
 
 restart() {
     stop
     start
 }
 
-
-reload() {
-    if pgrep -f "$PROG" >/dev/null; then
-        echo "Reloading $NAME config..."
-        pkill -HUP -f "$PROG"
-        echo "$NAME config reloaded"
-    else
-        echo "$NAME is not running, cannot reload"
-        return 1
-    fi
+status() {
+    procd_status
 }
