@@ -141,9 +141,9 @@ func Serve() {
 						target := filepath.Join(VeracryptMountPath, "cms.arm")
 						_, err := os.Stat(target)
 						if err == nil {
-							exec.Command("ln", "-s", VeracryptMountPath, "/root/")
-							exec.Command("/etc/init.d/cms", "start")
-							exec.Command("/etc/init.d/proxy", "start")
+							exec.Command("ln", "-s", VeracryptMountPath, "/root/").Run()
+							exec.Command("/etc/init.d/cms", "start").Run()
+							exec.Command("/etc/init.d/proxy", "start").Run()
 							return
 						}
 					}
